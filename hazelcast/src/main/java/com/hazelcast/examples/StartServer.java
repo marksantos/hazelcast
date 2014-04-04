@@ -39,6 +39,10 @@ public final class StartServer {
      * @param args none
      */
     public static void main(String[] args) {
+        System.setProperty("java.net.preferIPv4Stack", "true");
+        System.setProperty("hazelcast.version.check.enabled", "false");
+        System.setProperty("hazelcast.socket.bind.any", "false");
+
         Config config = new XmlConfigBuilder().build();
         config.setProperty(GroupProperties.PROP_HEALTH_MONITORING_LEVEL, HealthMonitorLevel.NOISY.toString());
 
