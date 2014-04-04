@@ -85,7 +85,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                             );
 
 
-                    ioSelector.addTask(this);
+                    ioSelector.addTask(WriteHandler.this);
                     ioSelector.wakeup();
                 }
             }
