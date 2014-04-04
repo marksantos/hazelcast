@@ -84,8 +84,7 @@ public final class TcpIpConnection implements Connection {
             }
             return false;
         }
-        writeHandler.enqueueSocketWritable(packet);
-        return true;
+        return writeHandler.enqueueSocketWritable(packet);
     }
 
     @Override

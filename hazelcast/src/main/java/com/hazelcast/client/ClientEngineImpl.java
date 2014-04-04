@@ -21,6 +21,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Client;
 import com.hazelcast.core.ClientListener;
 import com.hazelcast.core.ClientService;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
@@ -183,7 +184,21 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
     void sendResponse(ClientEndpoint endpoint, ClientResponse response) {
         Data resultData = serializationService.toData(response);
         Connection conn = endpoint.getConnection();
-        conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()));
+        if (response.isEvent()) {
+            conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()));
+        } else {
+            while (!conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()))) {
+                if (!endpoint.live()) {
+                    throw new HazelcastException("Client disconnected while sending response: "
+                            + response + ", endpoint: " + endpoint);
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    logger.info("Interrupted while sending response: " + response + " to " + endpoint);
+                }
+            }
+        }
     }
 
     @Override

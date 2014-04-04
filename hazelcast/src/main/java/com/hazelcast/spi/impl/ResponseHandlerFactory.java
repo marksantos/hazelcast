@@ -18,10 +18,11 @@ package com.hazelcast.spi.impl;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
-import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.ResponseHandler;
 import com.hazelcast.spi.exception.ResponseAlreadySentException;
 
@@ -112,7 +113,18 @@ public final class ResponseHandlerFactory {
                 response = (NormalResponse) obj;
             }
 
-            nodeEngine.getOperationService().send(response, op.getCallerAddress());
+            OperationService operationService = nodeEngine.getOperationService();
+            Address target = op.getCallerAddress();
+            while (!operationService.send(response, target)) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    nodeEngine.getLogger(op.getClass()).info("Interrupted while sending response: " + response);
+                }
+                if (nodeEngine.getClusterService().getMember(target) == null) {
+                    throw new HazelcastException("Cannot send response: " + response + " to " + target);
+                }
+            }
         }
 
         @Override

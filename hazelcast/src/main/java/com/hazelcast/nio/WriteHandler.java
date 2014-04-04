@@ -31,6 +31,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 import static com.hazelcast.util.StringUtil.stringToBytes;
@@ -44,6 +45,8 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             return t;
         }
     });
+
+    private final AtomicInteger totalQueueSize = new AtomicInteger();
 
     private final Queue<SocketWritable> writeQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
@@ -118,20 +121,34 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         return socketWriter;
     }
 
-    public void enqueueSocketWritable(SocketWritable socketWritable) {
-        if(socketWritable.isUrgent()){
+    public boolean enqueueSocketWritable(SocketWritable socketWritable) {
+        if (socketWritable == null) {
+            throw new NullPointerException("SocketWritable expected!");
+        }
+
+        int size = totalQueueSize.incrementAndGet();
+        boolean urgent = socketWritable.isUrgent();
+
+        if (urgent) {
+        } else if (size > 10000) {
+            totalQueueSize.decrementAndGet();
+            return false;
+        }
+
+        if (socketWritable.isUrgent()) {
             urgencyWriteQueue.offer(socketWritable);
-        }else{
+        } else {
             writeQueue.offer(socketWritable);
         }
         if (informSelector.compareAndSet(true, false)) {
             // we don't have to call wake up if this WriteHandler is
             // already in the task queue.
             // we can have a counter to check this later on.
-            // for now, wake up regardless.
+            // for now, wake up regardless.     `
             ioSelector.addTask(this);
             ioSelector.wakeup();
         }
+        return true;
     }
 
     private SocketWritable poll() {
