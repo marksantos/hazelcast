@@ -19,8 +19,6 @@ package com.hazelcast.client.examples;
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
-import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
@@ -50,13 +48,13 @@ public class SimpleClientMapTest {
         networkConfig.setSmartRouting(true);
         networkConfig.addAddress("10.16.32.163");
 
-        clientConfig.addNearCacheConfig("default",
-                new NearCacheConfig().setName("default")
-                        .setInMemoryFormat(InMemoryFormat.BINARY)
-                        .setInvalidateOnChange(true)
-                        .setMaxSize(10000)
-                        .setEvictionPolicy("LRU")
-        );
+//        clientConfig.addNearCacheConfig("default",
+//                new NearCacheConfig().setName("default")
+//                        .setInMemoryFormat(InMemoryFormat.BINARY)
+//                        .setInvalidateOnChange(true)
+//                        .setMaxSize(10000)
+//                        .setEvictionPolicy("LRU")
+//        );
 
         final HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
         final Stats stats = new Stats();
