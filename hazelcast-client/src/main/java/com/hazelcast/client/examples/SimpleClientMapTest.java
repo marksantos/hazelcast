@@ -83,17 +83,21 @@ public class SimpleClientMapTest {
                 public void run() {
                     IMap<String, byte[]> map = client.getMap("default");
                     while (true) {
-                        int key = (int) (Math.random() * ENTRY_COUNT);
-                        int operation = ((int) (Math.random() * 100));
-                        if (operation < GET_PERCENTAGE) {
-                            map.get(String.valueOf(key));
-                            stats.gets.incrementAndGet();
-                        } else if (operation < GET_PERCENTAGE + PUT_PERCENTAGE) {
-                            map.put(String.valueOf(key), new byte[VALUE_SIZE]);
-                            stats.puts.incrementAndGet();
-                        } else {
-                            map.remove(String.valueOf(key));
-                            stats.removes.incrementAndGet();
+                        try {
+                            int key = (int) (Math.random() * ENTRY_COUNT);
+                            int operation = ((int) (Math.random() * 100));
+                            if (operation < GET_PERCENTAGE) {
+                                map.get(String.valueOf(key));
+                                stats.gets.incrementAndGet();
+                            } else if (operation < GET_PERCENTAGE + PUT_PERCENTAGE) {
+                                map.put(String.valueOf(key), new byte[VALUE_SIZE]);
+                                stats.puts.incrementAndGet();
+                            } else {
+                                map.remove(String.valueOf(key));
+                                stats.removes.incrementAndGet();
+                            }
+                        } catch (Throwable e) {
+                            e.printStackTrace();
                         }
                     }
                 }
