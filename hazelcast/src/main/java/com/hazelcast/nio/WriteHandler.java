@@ -65,7 +65,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private volatile long lastHandle = 0;
 
-    private volatile int nonEventPollCount;
+    private int nonEventPollCount;
 
     WriteHandler(final TcpIpConnection connection, final IOSelector ioSelector) {
         super(connection);
@@ -81,8 +81,12 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                             (thread + ": " + connection.getEndPoint()
                                             + " -> Q-SIZE: " + writeQueue.size()
                                             + ", U-SIZE: " + urgencyWriteQueue.size()
-                                            + ", E-SIZE: " + urgencyWriteQueue.size()
+                                            + ", E-SIZE: " + eventWriteQueue.size()
                             );
+
+
+                    ioSelector.addTask(this);
+                    ioSelector.wakeup();
                 }
             }
         }, 10, 10, TimeUnit.SECONDS);
@@ -130,32 +134,27 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         boolean urgent = socketWritable.isUrgent();
         boolean event = socketWritable.isEvent();
 
-        if (!urgent) {
-            if (event) {
-                int size = eventWriteQueue.size();
-                if (size > 10000) {
-                    return false;
-                }
-            } else {
-                int size = writeQueue.size();
-                if (size > 10000) {
-                    return false;
-                }
-            }
-        }
-
         if (urgent) {
             urgencyWriteQueue.offer(socketWritable);
         } else if (event) {
+            int size = eventWriteQueue.size();
+            if (size > 10000) {
+                return false;
+            }
             eventWriteQueue.offer(socketWritable);
         } else {
+            int size = writeQueue.size();
+            if (size > 10000) {
+                return false;
+            }
             writeQueue.offer(socketWritable);
         }
+
         if (informSelector.compareAndSet(true, false)) {
             // we don't have to call wake up if this WriteHandler is
             // already in the task queue.
             // we can have a counter to check this later on.
-            // for now, wake up regardless.     `
+            // for now, wake up regardless.     `                                               `
             ioSelector.addTask(this);
             ioSelector.wakeup();
         }
