@@ -46,7 +46,8 @@ public class SimpleClientMapTest {
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         networkConfig.setRedoOperation(true);
         networkConfig.setSmartRouting(true);
-        networkConfig.addAddress("10.16.32.163");
+//        networkConfig.addAddress("10.16.32.163");
+        networkConfig.addAddress("192.168.2.84");
 
         final HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
         final Stats stats = new Stats();
