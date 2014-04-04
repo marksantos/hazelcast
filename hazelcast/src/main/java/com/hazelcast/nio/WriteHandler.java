@@ -21,9 +21,14 @@ import com.hazelcast.util.Clock;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -31,6 +36,14 @@ import java.util.logging.Level;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 
 public final class WriteHandler extends AbstractSelectionHandler implements Runnable {
+
+    private static final ScheduledExecutorService ex = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    });
 
     private final Queue<SocketWritable> writeQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
@@ -50,10 +63,25 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private volatile long lastHandle = 0;
 
-    WriteHandler(TcpIpConnection connection, IOSelector ioSelector) {
+    WriteHandler(final TcpIpConnection connection, final IOSelector ioSelector) {
         super(connection);
         this.ioSelector = ioSelector;
         buffer = ByteBuffer.allocate(connectionManager.socketSendBufferSize);
+
+        ex.scheduleWithFixedDelay(new Runnable() {
+            final NumberFormat format = new DecimalFormat("#.##");
+            final String thread = ((AbstractIOSelector) ioSelector).getName();
+
+            public void run() {
+                if (connection.live()) {
+                    System.err.println
+                            (thread + ": " + connection.getEndPoint()
+                                            + " -> Q-SIZE: " + writeQueue.size()
+                                            + ", U-SIZE: " + urgencyWriteQueue.size()
+                            );
+                }
+            }
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     // accessed from ReadHandler and SocketConnector
