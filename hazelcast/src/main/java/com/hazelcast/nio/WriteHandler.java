@@ -126,14 +126,15 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             throw new NullPointerException("SocketWritable expected!");
         }
 
-        int size = totalQueueSize.incrementAndGet();
+        int size = totalQueueSize.get();
         boolean urgent = socketWritable.isUrgent();
 
         if (urgent) {
         } else if (size > 10000) {
-            totalQueueSize.decrementAndGet();
             return false;
         }
+
+        totalQueueSize.incrementAndGet();
 
         if (socketWritable.isUrgent()) {
             urgencyWriteQueue.offer(socketWritable);
