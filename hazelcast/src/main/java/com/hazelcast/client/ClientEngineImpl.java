@@ -194,7 +194,7 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
                             + response + ", endpoint: " + endpoint);
                 }
                 if (++k % 100 == 0) {
-                    logger.warning("TRYING TO SEND RESPONSE: " + response + " to " + conn);
+                    logger.warning(k + " TRYING TO SEND RESPONSE: " + response + " to " + conn);
                 }
                 try {
                     Thread.sleep(100);
