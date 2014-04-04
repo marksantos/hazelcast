@@ -187,10 +187,14 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
         if (response.isEvent()) {
             conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()));
         } else {
+            int k = 0;
             while (!conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()))) {
                 if (!endpoint.live()) {
                     throw new HazelcastException("Client disconnected while sending response: "
                             + response + ", endpoint: " + endpoint);
+                }
+                if (++k % 100 == 0) {
+                    logger.warning("TRYING TO SEND RESPONSE: " + response + " to " + conn);
                 }
                 try {
                     Thread.sleep(100);
