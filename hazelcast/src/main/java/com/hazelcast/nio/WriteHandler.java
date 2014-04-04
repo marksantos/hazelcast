@@ -153,10 +153,12 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private SocketWritable poll() {
         SocketWritable writable = urgencyWriteQueue.poll();
-        if(writable == null){
+        if (writable == null) {
             writable = writeQueue.poll();
         }
-
+        if (writable != null) {
+            totalQueueSize.decrementAndGet();
+        }
         return writable;
     }
 
