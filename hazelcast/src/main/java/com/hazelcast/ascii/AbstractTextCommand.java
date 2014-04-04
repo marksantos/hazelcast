@@ -62,6 +62,11 @@ public abstract class AbstractTextCommand implements TextCommand {
     }
 
     @Override
+    public boolean isEvent() {
+        return false;
+    }
+
+    @Override
     public boolean shouldReply() {
         return true;
     }

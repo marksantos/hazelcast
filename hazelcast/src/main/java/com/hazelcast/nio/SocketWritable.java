@@ -45,4 +45,7 @@ public interface SocketWritable {
      * @return true if urgent, false otherwise.
      */
     boolean isUrgent();
+
+    boolean isEvent();
+
 }

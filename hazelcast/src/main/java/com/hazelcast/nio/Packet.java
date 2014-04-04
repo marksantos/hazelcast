@@ -111,6 +111,11 @@ public final class Packet extends DataAdapter implements SocketWritable, SocketR
     }
 
     @Override
+    public boolean isEvent() {
+        return isHeaderSet(Packet.HEADER_EVENT);
+    }
+
+    @Override
     public final boolean writeTo(ByteBuffer destination) {
         if (!isStatusSet(stVersion)) {
             if (!destination.hasRemaining()) {

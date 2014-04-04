@@ -185,7 +185,7 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
         Data resultData = serializationService.toData(response);
         Connection conn = endpoint.getConnection();
         if (response.isEvent()) {
-            conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()));
+            conn.write(new DataAdapter(resultData, serializationService.getSerializationContext(), true));
         } else {
             int k = 0;
             while (!conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()))) {

@@ -48,6 +48,7 @@ public class DataAdapter implements SocketWritable, SocketReadable {
 
     private transient short status = 0;
     private transient SerializationContext context;
+    private transient boolean event;
 
     public DataAdapter(Data data) {
         this.data = data;
@@ -62,9 +63,20 @@ public class DataAdapter implements SocketWritable, SocketReadable {
         this.context = context;
     }
 
+    public DataAdapter(Data data, SerializationContext context, boolean event) {
+        this.data = data;
+        this.context = context;
+        this.event = event;
+    }
+
     @Override
     public boolean isUrgent() {
         return false;
+    }
+
+    @Override
+    public boolean isEvent() {
+        return event;
     }
 
     /**

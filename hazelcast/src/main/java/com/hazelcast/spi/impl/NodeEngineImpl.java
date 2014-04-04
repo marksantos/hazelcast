@@ -270,7 +270,7 @@ public class NodeEngineImpl implements NodeEngine {
     public void handlePacket(Packet packet) {
         if (packet.isHeaderSet(Packet.HEADER_OP)) {
             operationService.receive(packet);
-        } else if (packet.isHeaderSet(Packet.HEADER_EVENT)) {
+        } else if (packet.isEvent()) {
             eventService.handleEvent(packet);
         } else if (packet.isHeaderSet(Packet.HEADER_WAN_REPLICATION)) {
             wanReplicationService.handleEvent(packet);
