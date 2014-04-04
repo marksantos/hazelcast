@@ -451,9 +451,9 @@ public class InternalPartitionServiceImpl implements InternalPartitionService, M
             }
             for (Future f : calls) {
                 try {
-                    f.get(3, TimeUnit.SECONDS);
+                    f.get(5, TimeUnit.SECONDS);
                 } catch (Exception e) {
-                    logger.info("Partition state sync invocation timed out: " + e);
+                    logger.finest("Partition state sync invocation timed out: " + e);
                 }
             }
         } finally {
@@ -1114,6 +1114,10 @@ public class InternalPartitionServiceImpl implements InternalPartitionService, M
 
     public void resumeMigration() {
         migrationActive.set(true);
+    }
+
+    public boolean isMigrationActive() {
+        return migrationActive.get();
     }
 
     @Override

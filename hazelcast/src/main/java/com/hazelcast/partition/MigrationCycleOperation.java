@@ -16,7 +16,5 @@
 
 package com.hazelcast.partition;
 
-import com.hazelcast.spi.UrgentSystemOperation;
-
-public interface MigrationCycleOperation extends UrgentSystemOperation {
+public interface MigrationCycleOperation {
 }

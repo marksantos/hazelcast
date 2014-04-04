@@ -27,7 +27,6 @@ import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.ResponseHandler;
-import com.hazelcast.spi.UrgentSystemOperation;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 
 import java.io.IOException;
@@ -38,7 +37,7 @@ import static com.hazelcast.nio.IOUtil.closeResource;
 
 @edu.umd.cs.findbugs.annotations.SuppressWarnings("EI_EXPOSE_REP")
 public class ReplicaSyncResponse extends Operation
-        implements PartitionAwareOperation, BackupOperation, UrgentSystemOperation {
+        implements PartitionAwareOperation, BackupOperation {
 
     private byte[] data;
     private long[] replicaVersions;

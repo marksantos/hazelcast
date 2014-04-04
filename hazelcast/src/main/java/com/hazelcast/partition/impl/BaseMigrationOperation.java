@@ -24,11 +24,12 @@ import com.hazelcast.partition.MigrationInfo;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.ExceptionAction;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.UrgentSystemOperation;
 
 import java.io.IOException;
 
 public abstract class BaseMigrationOperation extends AbstractOperation
-        implements MigrationCycleOperation, PartitionAwareOperation {
+        implements MigrationCycleOperation, PartitionAwareOperation, UrgentSystemOperation {
 
     protected MigrationInfo migrationInfo;
     protected boolean success;

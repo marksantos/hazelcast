@@ -23,11 +23,12 @@ import com.hazelcast.partition.InternalPartitionService;
 import com.hazelcast.partition.MigrationCycleOperation;
 import com.hazelcast.partition.PartitionRuntimeState;
 import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.UrgentSystemOperation;
 
 import java.io.IOException;
 
 public final class PartitionStateOperation extends AbstractOperation
-        implements MigrationCycleOperation, JoinOperation {
+        implements MigrationCycleOperation, JoinOperation, UrgentSystemOperation {
 
     private PartitionRuntimeState partitionState;
     private boolean sync;

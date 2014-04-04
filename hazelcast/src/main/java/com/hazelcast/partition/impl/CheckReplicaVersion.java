@@ -24,10 +24,12 @@ import com.hazelcast.partition.MigrationCycleOperation;
 import com.hazelcast.partition.ReplicaErrorLogger;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.UrgentSystemOperation;
 
 import java.io.IOException;
 
-public final class CheckReplicaVersion extends Operation implements PartitionAwareOperation, MigrationCycleOperation {
+public final class CheckReplicaVersion extends Operation
+        implements PartitionAwareOperation, MigrationCycleOperation, UrgentSystemOperation {
 
     private long version;
     private boolean returnResponse;

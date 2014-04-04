@@ -16,6 +16,7 @@
 
 package com.hazelcast.spi.impl;
 
+import com.hazelcast.cluster.ClusterService;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.MemberLeftException;
@@ -486,6 +487,7 @@ final class BasicOperationService implements InternalOperationService {
         int sentSyncBackupCount = 0;
         String serviceName = op.getServiceName();
         InternalPartition partition = partitionService.getPartition(partitionId);
+        ClusterService clusterService = nodeEngine.getClusterService();
 
         for (int replicaIndex = 1; replicaIndex <= totalBackupCount; replicaIndex++) {
             Address target = partition.getReplicaAddress(replicaIndex);
@@ -507,7 +509,17 @@ final class BasicOperationService implements InternalOperationService {
                     backup.setPartitionId(partitionId).setReplicaIndex(replicaIndex).setServiceName(serviceName)
                             .setCallerUuid(nodeEngine.getLocalMember().getUuid());
                     OperationAccessor.setCallId(backup, op.getCallId());
-                    send(backup, target);
+
+                    while (!send(backup, target)) {
+                        if (clusterService.getMember(target) == null) {
+                            break;
+                        }
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            nodeEngine.getLogger(op.getClass()).info("Interrupted while sending response: " + backup);
+                        }
+                    }
 
                     if (isSyncBackup) {
                         sentSyncBackupCount++;

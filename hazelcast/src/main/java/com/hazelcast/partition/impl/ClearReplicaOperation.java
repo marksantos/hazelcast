@@ -24,6 +24,7 @@ import com.hazelcast.partition.MigrationCycleOperation;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.MigrationAwareService;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.UrgentSystemOperation;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ import java.util.Collection;
 
 // runs locally...
 final class ClearReplicaOperation extends AbstractOperation
-        implements PartitionAwareOperation, MigrationCycleOperation {
+        implements PartitionAwareOperation, MigrationCycleOperation, UrgentSystemOperation {
 
     @Override
     public void run() throws Exception {

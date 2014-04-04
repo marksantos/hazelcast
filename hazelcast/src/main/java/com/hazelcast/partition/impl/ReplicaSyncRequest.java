@@ -84,6 +84,14 @@ public final class ReplicaSyncRequest extends Operation implements PartitionAwar
             return;
         }
 
+        if (!partitionService.isMigrationActive()) {
+            if (logger.isFinestEnabled()) {
+                logger.finest("Migration is paused! Cannot run replica sync -> " + toString());
+            }
+            sendRetryResponse();
+            return;
+        }
+
         if (!partitionService.incrementReplicaSyncProcessCount()) {
             if (logger.isFinestEnabled()) {
                 logger.finest(
