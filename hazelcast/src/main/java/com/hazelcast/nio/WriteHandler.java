@@ -155,7 +155,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         } else if (event) {
             int size = eventWriteQueue.size();
             if (size > 10000) {
-                return true;
+                return false;
             }
             eventWriteQueue.offer(socketWritable);
         } else {
