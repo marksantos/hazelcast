@@ -187,7 +187,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                 }
                 nonEventPollCount++;
             } else {
-                writable = eventWriteQueue.poll();
+                //writable = eventWriteQueue.poll();
                 nonEventPollCount = 0;
                 if (writable == null) {
                     writable = writeQueue.poll();
