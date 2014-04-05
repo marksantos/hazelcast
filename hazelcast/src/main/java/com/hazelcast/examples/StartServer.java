@@ -49,7 +49,8 @@ public final class StartServer {
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig join = networkConfig.getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).clear().addMember("10.16.33.180")
+        join.getTcpIpConfig().setEnabled(true)
+                .clear().addMember("10.16.33.180")
                 .setConnectionTimeoutSeconds(10);
 
         config.getMapConfig("default").setAsyncBackupCount(1).setBackupCount(0);
