@@ -83,7 +83,8 @@ public final class SimpleMapTest {
         JoinConfig join = networkConfig.getJoin();
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().setEnabled(true)
-                .clear().addMember("10.16.33.180")
+//                .clear().addMember("10.16.33.180")
+                .clear().addMember("10.16.40.83")
                 .setConnectionTimeoutSeconds(10);
 
         MapConfig mapConfig = config.getMapConfig("default");
