@@ -1,6 +1,10 @@
 #!/bin/sh
 
-CLASS="com.hazelcast.examples.StartServer"
+CLASS="com.hazelcast.examples.SimpleMapTest"
+
+if [ "$1" = "-server" ]; then
+	CLASS="com.hazelcast.examples.StartServer"
+fi
 
 if [ "$1" = "-client" ]; then
 	CLASS="com.hazelcast.client.examples.SimpleClientMapTest"

@@ -21,6 +21,7 @@ import com.hazelcast.util.Clock;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.Date;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -82,6 +83,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                                             + " -> Q-SIZE: " + writeQueue.size()
                                             + ", U-SIZE: " + urgencyWriteQueue.size()
                                             + ", E-SIZE: " + eventWriteQueue.size()
+                                            + "m last: " + new Date(lastHandle)
                             );
 
 
@@ -164,7 +166,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     private SocketWritable poll() {
         SocketWritable writable = urgencyWriteQueue.poll();
         if (writable == null) {
-            if (nonEventPollCount < 1) {
+            if (nonEventPollCount < 10) {
                 writable = writeQueue.poll();
                 if (writable == null) {
                     writable = eventWriteQueue.poll();
@@ -251,7 +253,6 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     long getLastHandle() {
         return lastHandle;
     }
-
 
     private static class SocketQueue extends ConcurrentLinkedQueue<SocketWritable> {
 
