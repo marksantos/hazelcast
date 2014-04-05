@@ -371,14 +371,6 @@ public class TcpIpConnectionManager implements ConnectionManager {
         socket.setTcpNoDelay(socketNoDelay);
         socket.setReceiveBufferSize(socketReceiveBufferSize);
         socket.setSendBufferSize(socketSendBufferSize);
-
-        if (socket.getReceiveBufferSize() != socketReceiveBufferSize) {
-            new IllegalStateException("SOCKET RECEIVE BUFFER SIZE CANNOT SET: " + socket.getReceiveBufferSize()).printStackTrace();
-        }
-
-        if (socket.getSendBufferSize() != socketSendBufferSize) {
-            new IllegalStateException("SOCKET SEND BUFFER SIZE CANNOT SET: " + socket.getSendBufferSize()).printStackTrace();
-        }
     }
 
     public synchronized void start() {

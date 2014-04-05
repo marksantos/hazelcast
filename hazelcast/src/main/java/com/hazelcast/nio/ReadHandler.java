@@ -23,10 +23,22 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.util.StringUtil.bytesToString;
 
 final class ReadHandler extends AbstractSelectionHandler implements Runnable {
+
+    private static final ScheduledExecutorService ex = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, "READ-HANDLER");
+            t.setDaemon(true);
+            return t;
+        }
+    });
 
     private final ByteBuffer buffer;
 
@@ -40,6 +52,12 @@ final class ReadHandler extends AbstractSelectionHandler implements Runnable {
         super(connection);
         this.ioSelector = ioSelector;
         buffer = ByteBuffer.allocate(connectionManager.socketReceiveBufferSize);
+
+        ex.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                register();
+            }
+        }, 5, 5, TimeUnit.SECONDS);
     }
 
     public final void handle() {
@@ -123,7 +141,7 @@ final class ReadHandler extends AbstractSelectionHandler implements Runnable {
     }
 
     public void register() {
-        ioSelector.addTask(this);
+        ioSelector.addTask(ReadHandler.this);
         ioSelector.wakeup();
     }
 }

@@ -76,9 +76,6 @@ public final class SimpleMapTest {
         Config config = new XmlConfigBuilder().build();
         config.setProperty(GroupProperties.PROP_HEALTH_MONITORING_LEVEL, HealthMonitorLevel.NOISY.toString());
 
-        config.setProperty(GroupProperties.PROP_SOCKET_SEND_BUFFER_SIZE, "1024");
-        config.setProperty(GroupProperties.PROP_SOCKET_RECEIVE_BUFFER_SIZE, "1024");
-
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig join = networkConfig.getJoin();
         join.getMulticastConfig().setEnabled(false);

@@ -40,7 +40,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private static final ScheduledExecutorService ex = Executors.newScheduledThreadPool(2, new ThreadFactory() {
         public Thread newThread(Runnable r) {
-            Thread t = new Thread(r);
+            Thread t = new Thread(r, "WRITE-HANDLER");
             t.setDaemon(true);
             return t;
         }
