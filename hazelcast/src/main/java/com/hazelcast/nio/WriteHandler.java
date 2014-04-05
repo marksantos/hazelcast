@@ -157,7 +157,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             if (size > 10000) {
                 return false;
             }
-            eventWriteQueue.offer(socketWritable);
+//            eventWriteQueue.offer(socketWritable);
         } else {
             int size = writeQueue.size();
             if (size > 10000) {
@@ -187,7 +187,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                 }
                 nonEventPollCount++;
             } else {
-                //writable = eventWriteQueue.poll();
+                writable = eventWriteQueue.poll();
                 nonEventPollCount = 0;
                 if (writable == null) {
                     writable = writeQueue.poll();
