@@ -17,7 +17,6 @@
 package com.hazelcast.examples;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EntryListenerConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NetworkConfig;
@@ -85,13 +84,27 @@ public final class SimpleMapTest {
 
         MapConfig mapConfig = config.getMapConfig("default");
         mapConfig.setAsyncBackupCount(1).setBackupCount(0);
-        mapConfig.addEntryListenerConfig(new EntryListenerConfig()
-                .setIncludeValue(false)
-                .setLocal(false)
-                .setImplementation(new EntryAdapter()));
+
+//        mapConfig.addEntryListenerConfig(new EntryListenerConfig()
+//                .setIncludeValue(false)
+//                .setLocal(false)
+//                .setImplementation(new EntryAdapter()));
 
         instance = Hazelcast.newHazelcastInstance(config);
         logger = instance.getLoggingService().getLogger("SimpleMapTest");
+
+
+        new Thread("listener-adding-thread") {
+            public void run() {
+                try {
+                    sleep(5 * 1000 * 60);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                IMap<Object, Object> map = instance.getMap("default");
+                map.addEntryListener(new EntryAdapter<Object, Object>(), false);
+            }
+        }.start();
     }
 
     /**
