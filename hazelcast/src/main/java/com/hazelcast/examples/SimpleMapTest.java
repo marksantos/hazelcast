@@ -215,6 +215,9 @@ public final class SimpleMapTest {
                     try {
                         Thread.sleep(STATS_SECONDS * 1000);
                         stats.printAndReset();
+                        System.out.println();
+                        System.out.println(GCUtil.getGCStats());
+                        System.out.println();
                     } catch (InterruptedException ignored) {
                         return;
                     }

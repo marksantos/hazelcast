@@ -83,7 +83,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                                             + " -> Q-SIZE: " + writeQueue.size()
                                             + ", U-SIZE: " + urgencyWriteQueue.size()
                                             + ", E-SIZE: " + eventWriteQueue.size()
-                                            + "m last: " + new Date(lastHandle)
+                                            + ", last: " + new Date(lastHandle)
                             );
 
 

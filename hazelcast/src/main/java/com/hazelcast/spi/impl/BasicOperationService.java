@@ -510,7 +510,12 @@ final class BasicOperationService implements InternalOperationService {
                             .setCallerUuid(nodeEngine.getLocalMember().getUuid());
                     OperationAccessor.setCallId(backup, op.getCallId());
 
+                    int k = 0;
                     while (!send(backup, target)) {
+                        if (++k == 5000) {
+
+                            break;
+                        }
                         if (clusterService.getMember(target) == null) {
                             break;
                         }
