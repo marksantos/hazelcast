@@ -187,7 +187,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     private SocketWritable poll() {
         SocketWritable writable = urgencyWriteQueue.poll();
         if (writable == null) {
-            if (nonEventPollCount < 10) {
+            if (nonEventPollCount < 1) {
                 writable = writeQueue.poll();
                 nonEventPollCount++;
             } else {
