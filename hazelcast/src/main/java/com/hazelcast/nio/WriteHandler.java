@@ -53,6 +53,9 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
+    private final AtomicInteger qCounter = new AtomicInteger();
+    private final AtomicInteger eCounter = new AtomicInteger();
+
     private final AtomicBoolean informSelector = new AtomicBoolean(true);
 
     private final ByteBuffer buffer;
@@ -87,6 +90,8 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                                                 + " -> Q: " + qsize
                                                 + ", U: " + usize
                                                 + ", E: " + esize
+                                                + ", QCounter: " + qCounter.getAndSet(0)
+                                                + ", ECounter: " + eCounter.getAndSet(0)
                                                 + ", B: " + buffer.remaining()
                                                 + ", last: " + new Date(lastHandle)
                                 );
@@ -153,12 +158,14 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         if (urgent) {
             urgencyWriteQueue.offer(socketWritable);
         } else if (event) {
+            eCounter.incrementAndGet();
             int size = eventWriteQueue.size();
             if (size > 10000) {
                 return false;
             }
             eventWriteQueue.offer(socketWritable);
         } else {
+            qCounter.incrementAndGet();
             int size = writeQueue.size();
             if (size > 10000) {
                 return false;
