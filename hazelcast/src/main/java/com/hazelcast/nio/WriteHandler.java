@@ -17,6 +17,7 @@
 package com.hazelcast.nio;
 
 import com.hazelcast.nio.ascii.SocketTextWriter;
+import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.util.Clock;
 
 import java.nio.ByteBuffer;
@@ -74,21 +75,34 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         buffer = ByteBuffer.allocate(connectionManager.socketSendBufferSize);
 
         ex.scheduleWithFixedDelay(new Runnable() {
-            final String thread = ((AbstractIOSelector) ioSelector).getName();
-
             public void run() {
                 if (connection.live()) {
-                    System.err.println
-                            (thread + ": " + connection.getEndPoint()
-                                            + " -> Q-SIZE: " + writeQueue.size()
-                                            + ", U-SIZE: " + urgencyWriteQueue.size()
-                                            + ", E-SIZE: " + eventWriteQueue.size()
-                                            + ", last: " + new Date(lastHandle)
-                            );
+                    int qsize = writeQueue.size();
+                    int usize = urgencyWriteQueue.size();
+                    int esize = eventWriteQueue.size();
 
+                    if (qsize + esize + usize > 0) {
+                        System.err.println
+                                (connection.getEndPoint()
+                                                + " -> Q: " + qsize
+                                                + ", U: " + usize
+                                                + ", E: " + esize
+                                                + ", B: " + buffer.remaining()
+                                                + ", last: " + new Date(lastHandle)
+                                );
 
-                    ioSelector.addTask(WriteHandler.this);
-                    ioSelector.wakeup();
+                        SerializationService ss = connection.getConnectionManager().ioService
+                                .getSerializationService();
+                        for (SocketWritable sw : urgencyWriteQueue) {
+                            if (sw instanceof Packet) {
+                                System.err.println("\t" + ss.toObject(((Packet) sw).getData()));
+                            }
+                        }
+
+                        ioSelector.addTask(WriteHandler.this);
+                        ioSelector.wakeup();
+                    }
+
                 }
             }
         }, 10, 10, TimeUnit.SECONDS);
@@ -228,6 +242,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         } finally {
             ready = false;
             registerWrite();
+            lastHandle = Clock.currentTimeMillis();
         }
     }
 
