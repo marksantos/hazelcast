@@ -32,7 +32,11 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -367,6 +371,14 @@ public class TcpIpConnectionManager implements ConnectionManager {
         socket.setTcpNoDelay(socketNoDelay);
         socket.setReceiveBufferSize(socketReceiveBufferSize);
         socket.setSendBufferSize(socketSendBufferSize);
+
+        if (socket.getReceiveBufferSize() != socketReceiveBufferSize) {
+            new IllegalStateException("SOCKET RECEIVE BUFFER SIZE CANNOT SET: " + socket.getReceiveBufferSize()).printStackTrace();
+        }
+
+        if (socket.getSendBufferSize() != socketSendBufferSize) {
+            new IllegalStateException("SOCKET SEND BUFFER SIZE CANNOT SET: " + socket.getSendBufferSize()).printStackTrace();
+        }
     }
 
     public synchronized void start() {

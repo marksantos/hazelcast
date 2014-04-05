@@ -82,7 +82,8 @@ public final class SimpleMapTest {
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig join = networkConfig.getJoin();
         join.getMulticastConfig().setEnabled(false);
-        join.getTcpIpConfig().setEnabled(true).clear().addMember("10.16.33.180")
+        join.getTcpIpConfig().setEnabled(true)
+                .clear().addMember("10.16.33.180")
                 .setConnectionTimeoutSeconds(10);
 
         MapConfig mapConfig = config.getMapConfig("default");
@@ -100,7 +101,7 @@ public final class SimpleMapTest {
         new Thread("listener-adding-thread") {
             public void run() {
                 try {
-                    sleep(5 * 1000 * 60);
+                    sleep(2 * 1000 * 60);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
