@@ -17,13 +17,20 @@
 package com.hazelcast.nio;
 
 import com.hazelcast.nio.ascii.SocketTextWriter;
+import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.util.Clock;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.Date;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -32,7 +39,15 @@ import static com.hazelcast.util.StringUtil.stringToBytes;
 
 public final class WriteHandler extends AbstractSelectionHandler implements Runnable {
 
-    private final Queue<SocketWritable> writeQueue = new ConcurrentLinkedQueue<SocketWritable>();
+    private static final ScheduledExecutorService ex = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, "WRITE-HANDLER");
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
+    private final BlockingQueue<SocketWritable> writeQueue = new LinkedBlockingQueue<SocketWritable>(10000);
 
     private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
@@ -50,10 +65,37 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private volatile long lastHandle = 0;
 
-    WriteHandler(TcpIpConnection connection, IOSelector ioSelector) {
+    WriteHandler(final TcpIpConnection connection, final IOSelector ioSelector) {
         super(connection);
         this.ioSelector = ioSelector;
         buffer = ByteBuffer.allocate(connectionManager.socketSendBufferSize);
+
+        ex.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                if (connection.live()) {
+                    int qSize = writeQueue.size();
+                    int uSize = urgencyWriteQueue.size();
+
+                    if (qSize + uSize > 0) {
+                        System.err.println
+                                (connection.getEndPoint()
+                                                + " -> Q: " + qSize
+                                                + ", U: " + uSize
+                                                + ", last: " + new Date(lastHandle)
+                                );
+
+                        SerializationService ss = connection.getConnectionManager().ioService
+                                .getSerializationService();
+                        for (SocketWritable sw : urgencyWriteQueue) {
+                            if (sw instanceof Packet) {
+                                System.err.println("\t" + ss.toObject(((Packet) sw).getData()));
+                            }
+                        }
+                    }
+
+                }
+            }
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     // accessed from ReadHandler and SocketConnector
@@ -90,28 +132,39 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         return socketWriter;
     }
 
-    public void enqueueSocketWritable(SocketWritable socketWritable) {
-        if(socketWritable.isUrgent()){
-            urgencyWriteQueue.offer(socketWritable);
-        }else{
-            writeQueue.offer(socketWritable);
+    boolean enqueueSocketWritable(SocketWritable socketWritable, long timeout, TimeUnit unit)
+            throws InterruptedException {
+        if (socketWritable == null) {
+            throw new NullPointerException("SocketWritable expected!");
         }
-        if (informSelector.compareAndSet(true, false)) {
-            // we don't have to call wake up if this WriteHandler is
-            // already in the task queue.
-            // we can have a counter to check this later on.
-            // for now, wake up regardless.
-            ioSelector.addTask(this);
-            ioSelector.wakeup();
+
+        boolean urgent = socketWritable.isUrgent();
+        boolean offered;
+
+        if (urgent) {
+            offered = urgencyWriteQueue.offer(socketWritable);
+        } else {
+            offered = writeQueue.offer(socketWritable, timeout, unit);
         }
+
+        if (offered) {
+            if (informSelector.compareAndSet(true, false)) {
+                // we don't have to call wake up if this WriteHandler is
+                // already in the task queue.
+                // we can have a counter to check this later on.
+                // for now, wake up regardless.     `                                               `
+                ioSelector.addTask(this);
+                ioSelector.wakeup();
+            }
+        }
+        return offered;
     }
 
     private SocketWritable poll() {
         SocketWritable writable = urgencyWriteQueue.poll();
-        if(writable == null){
+        if (writable == null) {
             writable = writeQueue.poll();
         }
-
         return writable;
     }
 

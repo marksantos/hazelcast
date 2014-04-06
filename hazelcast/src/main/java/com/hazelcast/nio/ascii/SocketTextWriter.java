@@ -36,10 +36,12 @@ public class SocketTextWriter implements SocketWriter<TextCommand> {
     public void enqueue(TextCommand response) {
         long requestId = response.getRequestId();
         if (requestId == -1) {
-            connection.getWriteHandler().enqueueSocketWritable(response);
+            // TODO: response can be rejected by connection write handler
+            connection.write(response);
         } else {
             if (currentRequestId == requestId) {
-                connection.getWriteHandler().enqueueSocketWritable(response);
+                // TODO: response can be rejected by connection write handler
+                connection.write(response);
                 currentRequestId++;
                 processWaitingResponses();
             } else {
@@ -51,7 +53,8 @@ public class SocketTextWriter implements SocketWriter<TextCommand> {
     private void processWaitingResponses() {
         TextCommand response = responses.remove(currentRequestId);
         while (response != null) {
-            connection.getWriteHandler().enqueueSocketWritable(response);
+            // TODO: response can be rejected by connection write handler
+            connection.write(response);
             currentRequestId++;
             response = responses.remove(currentRequestId);
         }

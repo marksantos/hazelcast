@@ -21,6 +21,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Client;
 import com.hazelcast.core.ClientListener;
 import com.hazelcast.core.ClientService;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
@@ -93,6 +94,7 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
             new ConcurrentHashMap<Connection, ClientEndpoint>();
     private final ILogger logger;
     private final ConnectionListener connectionListener = new ConnectionListenerImpl();
+    private final long packetWriteTimeoutMillis;
 
     public ClientEngineImpl(Node node) {
         this.node = node;
@@ -103,6 +105,8 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
                 coreSize * THREADS_PER_CORE, coreSize * RIDICULOUS_THREADS_PER_CORE,
                 ExecutorType.CONCRETE);
         this.logger = node.getLogger(ClientEngine.class);
+
+        packetWriteTimeoutMillis = node.groupProperties.OPERATION_CALL_TIMEOUT_MILLIS.getLong() * 10;
     }
 
     //needed for testing purposes
@@ -183,7 +187,12 @@ public class ClientEngineImpl implements ClientEngine, CoreService,
     void sendResponse(ClientEndpoint endpoint, ClientResponse response) {
         Data resultData = serializationService.toData(response);
         Connection conn = endpoint.getConnection();
-        conn.write(new DataAdapter(resultData, serializationService.getSerializationContext()));
+        DataAdapter packet = new DataAdapter(resultData, serializationService.getSerializationContext());
+        boolean sent = conn.write(packet, packetWriteTimeoutMillis, TimeUnit.MILLISECONDS);
+
+        if (!sent && conn.live()) {
+            logger.severe(new HazelcastException("Cannot send " + response + " to client: " + endpoint));
+        }
     }
 
     @Override

@@ -17,14 +17,19 @@
 package com.hazelcast.examples;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.XmlConfigBuilder;
+import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.Partition;
+import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.util.HealthMonitorLevel;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -45,7 +50,6 @@ public final class SimpleMapTest {
     private final HazelcastInstance instance;
     private final ILogger logger;
     private final Stats stats = new Stats();
-    private final Random random;
 
     private final int threadCount;
     private final int entryCount;
@@ -55,8 +59,9 @@ public final class SimpleMapTest {
     private final boolean load;
 
     static {
-        System.setProperty("hazelcast.version.check.enabled", "false");
         System.setProperty("java.net.preferIPv4Stack", "true");
+        System.setProperty("hazelcast.version.check.enabled", "false");
+        System.setProperty("hazelcast.socket.bind.any", "false");
     }
 
     private SimpleMapTest(final int threadCount, final int entryCount, final int valueSize,
@@ -67,11 +72,41 @@ public final class SimpleMapTest {
         this.getPercentage = getPercentage;
         this.putPercentage = putPercentage;
         this.load = load;
-        Config cfg = new XmlConfigBuilder().build();
 
-        instance = Hazelcast.newHazelcastInstance(cfg);
+        Config config = new XmlConfigBuilder().build();
+        config.setProperty(GroupProperties.PROP_HEALTH_MONITORING_LEVEL, HealthMonitorLevel.NOISY.toString());
+
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        JoinConfig join = networkConfig.getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true)
+//                .clear().addMember("10.146.170.167")
+                .clear().addMember("10.16.37.107")
+                .setConnectionTimeoutSeconds(10);
+
+        MapConfig mapConfig = config.getMapConfig("default");
+        mapConfig.setAsyncBackupCount(1).setBackupCount(0);
+
+//        mapConfig.addEntryListenerConfig(new EntryListenerConfig()
+//                .setIncludeValue(false)
+//                .setLocal(false)
+//                .setImplementation(new EntryAdapter()));
+
+        instance = Hazelcast.newHazelcastInstance(config);
         logger = instance.getLoggingService().getLogger("SimpleMapTest");
-        random = new Random();
+
+
+        new Thread("listener-adding-thread") {
+            public void run() {
+                try {
+                    sleep(2 * 1000 * 60);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                IMap<Object, Object> map = instance.getMap("default");
+                map.addEntryListener(new EntryAdapter<Object, Object>(), false);
+            }
+        }.start();
     }
 
     /**
@@ -128,8 +163,9 @@ public final class SimpleMapTest {
         for (int i = 0; i < threadCount; i++) {
             es.execute(new Runnable() {
                 public void run() {
-                    try {
-                        while (true) {
+                    Random random = new Random();
+                    while (true) {
+                        try {
                             int key = (int) (random.nextFloat() * entryCount);
                             int operation = ((int) (random.nextFloat() * 100));
                             if (operation < getPercentage) {
@@ -142,11 +178,9 @@ public final class SimpleMapTest {
                                 map.remove(String.valueOf(key));
                                 stats.removes.incrementAndGet();
                             }
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    } catch (HazelcastInstanceNotActiveException e) {
-                        e.printStackTrace();
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }
             });
@@ -196,6 +230,9 @@ public final class SimpleMapTest {
                     try {
                         Thread.sleep(STATS_SECONDS * 1000);
                         stats.printAndReset();
+                        System.out.println();
+                        System.out.println(GCUtil.getGCStats());
+                        System.out.println();
                     } catch (InterruptedException ignored) {
                         return;
                     }

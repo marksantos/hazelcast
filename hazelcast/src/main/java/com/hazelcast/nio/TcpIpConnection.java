@@ -18,12 +18,14 @@ package com.hazelcast.nio;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.SystemLogService;
+import com.hazelcast.util.ExceptionUtil;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The Tcp/Ip implementation of the {@link com.hazelcast.nio.Connection}.
@@ -78,14 +80,22 @@ public final class TcpIpConnection implements Connection {
 
     @Override
     public boolean write(SocketWritable packet) {
+       return write(packet, 0, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public boolean write(SocketWritable packet, long timeout, TimeUnit unit) {
         if (!live) {
             if (logger.isFinestEnabled()) {
                 logger.finest( "Connection is closed, won't write packet -> " + packet);
             }
             return false;
         }
-        writeHandler.enqueueSocketWritable(packet);
-        return true;
+        try {
+            return writeHandler.enqueueSocketWritable(packet, timeout, unit);
+        } catch (InterruptedException e) {
+            throw ExceptionUtil.rethrow(e);
+        }
     }
 
     @Override

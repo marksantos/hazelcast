@@ -18,6 +18,7 @@ package com.hazelcast.nio;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Represents a 'connection' between two machines. The most important implementation is the
@@ -37,6 +38,21 @@ public interface Connection {
      * @throws NullPointerException if packet is null.
      */
     boolean write(SocketWritable packet);
+
+    /**
+     * Writes a SocketWritable packet to the other side.
+     * <p/>
+     * The packet could be stored in an internal queue before it actually is written, so this call
+     * doesn't need to be a synchronous call.
+     *
+     * @param packet the packet to write.
+     * @param timeout
+     * @param unit
+     * @return false if the packet was not accepted to be written, e.g. because the Connection was
+     * not alive.
+     * @throws NullPointerException if packet is null.
+     */
+    boolean write(SocketWritable packet, long timeout, TimeUnit unit);
 
     /**
      * Checks if the Connection is still alive.

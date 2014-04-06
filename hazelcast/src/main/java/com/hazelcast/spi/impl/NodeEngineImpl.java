@@ -70,6 +70,9 @@ public class NodeEngineImpl implements NodeEngine {
     final EventServiceImpl eventService;
     final WaitNotifyServiceImpl waitNotifyService;
 
+    private final long packetWriteTimeoutMillis;
+
+
     public NodeEngineImpl(Node node) {
         this.node = node;
         logger = node.getLogger(NodeEngine.class.getName());
@@ -81,6 +84,8 @@ public class NodeEngineImpl implements NodeEngine {
         waitNotifyService = new WaitNotifyServiceImpl(this);
         transactionManagerService = new TransactionManagerServiceImpl(this);
         wanReplicationService = new WanReplicationService(node);
+
+        packetWriteTimeoutMillis = node.groupProperties.OPERATION_CALL_TIMEOUT_MILLIS.getLong() * 10;
     }
 
     @PrivateApi
@@ -201,7 +206,7 @@ public class NodeEngineImpl implements NodeEngine {
         if (memberImpl != null) {
             memberImpl.didWrite();
         }
-        return connection.write(packet);
+        return connection.write(packet, packetWriteTimeoutMillis, TimeUnit.MILLISECONDS);
     }
 
     /**
