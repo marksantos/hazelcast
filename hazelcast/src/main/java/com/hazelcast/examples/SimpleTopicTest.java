@@ -18,6 +18,7 @@
 package com.hazelcast.examples;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
@@ -55,12 +56,11 @@ public class SimpleTopicTest {
         Config config = new XmlConfigBuilder().build();
         config.setProperty(GroupProperties.PROP_HEALTH_MONITORING_LEVEL, HealthMonitorLevel.NOISY.toString());
         NetworkConfig networkConfig = config.getNetworkConfig();
-//        JoinConfig join = networkConfig.getJoin();
-//        join.getMulticastConfig().setEnabled(false);
-//        join.getTcpIpConfig().setEnabled(true)
-//                .clear().addMember("10.146.170.167")
-//                .clear().addMember("10.16.41.172")
-//                .setConnectionTimeoutSeconds(10);
+        JoinConfig join = networkConfig.getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true)
+                .clear().addMember("10.16.40.40")
+                .setConnectionTimeoutSeconds(10);
         instance = Hazelcast.newHazelcastInstance(config);
         logger = instance.getLoggingService().getLogger("SimpleMapTest");
     }
