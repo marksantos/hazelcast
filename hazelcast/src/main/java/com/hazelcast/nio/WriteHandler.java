@@ -19,14 +19,17 @@ package com.hazelcast.nio;
 import com.hazelcast.nio.ascii.SocketTextWriter;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.util.Clock;
+import com.hazelcast.util.ExceptionUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.Date;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -47,14 +50,11 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     });
 
 
-    private final Queue<SocketWritable> writeQueue = new SocketQueue();
+    private final BlockingQueue<SocketWritable> writeQueue = new LinkedBlockingQueue<SocketWritable>(100);
 
-    private final Queue<SocketWritable> eventWriteQueue = new SocketQueue();
-
-    private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
+//    private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
     private final AtomicInteger qCounter = new AtomicInteger();
-    private final AtomicInteger eCounter = new AtomicInteger();
 
     private final AtomicBoolean informSelector = new AtomicBoolean(true);
 
@@ -70,8 +70,6 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private volatile long lastHandle = 0;
 
-    private int nonEventPollCount;
-
     WriteHandler(final TcpIpConnection connection, final IOSelector ioSelector) {
         super(connection);
         this.ioSelector = ioSelector;
@@ -81,28 +79,18 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             public void run() {
                 if (connection.live()) {
                     int qsize = writeQueue.size();
-                    int usize = urgencyWriteQueue.size();
-                    int esize = eventWriteQueue.size();
 
-                    if (qsize + esize + usize > 0) {
+                    if (qsize > 0) {
                         System.err.println
                                 (connection.getEndPoint()
                                                 + " -> Q: " + qsize
-                                                + ", U: " + usize
-                                                + ", E: " + esize
                                                 + ", QCounter: " + qCounter.getAndSet(0)
-                                                + ", ECounter: " + eCounter.getAndSet(0)
                                                 + ", B: " + buffer.remaining()
                                                 + ", last: " + new Date(lastHandle)
                                 );
 
                         SerializationService ss = connection.getConnectionManager().ioService
                                 .getSerializationService();
-                        for (SocketWritable sw : urgencyWriteQueue) {
-                            if (sw instanceof Packet) {
-                                System.err.println("\t" + ss.toObject(((Packet) sw).getData()));
-                            }
-                        }
 
                         ioSelector.addTask(WriteHandler.this);
                         ioSelector.wakeup();
@@ -152,25 +140,11 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             throw new NullPointerException("SocketWritable expected!");
         }
 
-        boolean urgent = socketWritable.isUrgent();
-        boolean event = socketWritable.isEvent();
-
-        if (urgent) {
-            urgencyWriteQueue.offer(socketWritable);
-        } else if (event) {
-            eCounter.incrementAndGet();
-            int size = eventWriteQueue.size();
-            if (size > 10000) {
-                return false;
-            }
-            eventWriteQueue.offer(socketWritable);
-        } else {
-            qCounter.incrementAndGet();
-            int size = writeQueue.size();
-            if (size > 10000) {
-                return false;
-            }
-            writeQueue.offer(socketWritable);
+        qCounter.incrementAndGet();
+        try {
+            writeQueue.put(socketWritable);
+        } catch (InterruptedException e) {
+            throw ExceptionUtil.rethrow(e);
         }
 
         if (informSelector.compareAndSet(true, false)) {
@@ -185,17 +159,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     }
 
     private SocketWritable poll() {
-        SocketWritable writable = urgencyWriteQueue.poll();
-        if (writable == null) {
-            if (nonEventPollCount < 1) {
-                writable = writeQueue.poll();
-                nonEventPollCount++;
-            } else {
-                writable = eventWriteQueue.poll();
-                nonEventPollCount = 0;
-            }
-        }
-        return writable;
+        return writeQueue.poll();
     }
 
     @SuppressWarnings("unchecked")
