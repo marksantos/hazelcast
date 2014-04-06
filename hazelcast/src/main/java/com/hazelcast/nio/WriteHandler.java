@@ -50,7 +50,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     });
 
 
-    private final BlockingQueue<SocketWritable> writeQueue = new LinkedBlockingQueue<SocketWritable>(10000);
+    private final BlockingQueue<SocketWritable> writeQueue = new LinkedBlockingQueue<SocketWritable>(100);
 
 //    private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
