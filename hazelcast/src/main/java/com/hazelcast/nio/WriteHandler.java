@@ -49,8 +49,6 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private final Queue<SocketWritable> writeQueue = new SocketQueue();
 
-    private final Queue<SocketWritable> eventWriteQueue = new SocketQueue();
-
     private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
     private final AtomicInteger qCounter = new AtomicInteger();
@@ -70,8 +68,6 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private volatile long lastHandle = 0;
 
-    private int nonEventPollCount;
-
     WriteHandler(final TcpIpConnection connection, final IOSelector ioSelector) {
         super(connection);
         this.ioSelector = ioSelector;
@@ -80,16 +76,14 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         ex.scheduleWithFixedDelay(new Runnable() {
             public void run() {
                 if (connection.live()) {
-                    int qsize = writeQueue.size();
-                    int usize = urgencyWriteQueue.size();
-                    int esize = eventWriteQueue.size();
+                    int qSize = writeQueue.size();
+                    int uSize = urgencyWriteQueue.size();
 
-                    if (qsize + esize + usize > 0) {
+                    if (qSize + uSize > 0) {
                         System.err.println
                                 (connection.getEndPoint()
-                                                + " -> Q: " + qsize
-                                                + ", U: " + usize
-                                                + ", E: " + esize
+                                                + " -> Q: " + qSize
+                                                + ", U: " + uSize
                                                 + ", QCounter: " + qCounter.getAndSet(0)
                                                 + ", ECounter: " + eCounter.getAndSet(0)
                                                 + ", B: " + buffer.remaining()
@@ -103,9 +97,6 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
                                 System.err.println("\t" + ss.toObject(((Packet) sw).getData()));
                             }
                         }
-
-                        ioSelector.addTask(WriteHandler.this);
-                        ioSelector.wakeup();
                     }
 
                 }
@@ -153,17 +144,9 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
         }
 
         boolean urgent = socketWritable.isUrgent();
-        boolean event = socketWritable.isEvent();
 
         if (urgent) {
             urgencyWriteQueue.offer(socketWritable);
-        } else if (event) {
-            eCounter.incrementAndGet();
-            int size = eventWriteQueue.size();
-            if (size > 10000) {
-                return false;
-            }
-            eventWriteQueue.offer(socketWritable);
         } else {
             qCounter.incrementAndGet();
             int size = writeQueue.size();
@@ -187,19 +170,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     private SocketWritable poll() {
         SocketWritable writable = urgencyWriteQueue.poll();
         if (writable == null) {
-            if (nonEventPollCount < 10) {
-                writable = writeQueue.poll();
-                if (writable == null) {
-                    writable = eventWriteQueue.poll();
-                }
-                nonEventPollCount++;
-            } else {
-                writable = eventWriteQueue.poll();
-                nonEventPollCount = 0;
-                if (writable == null) {
-                    writable = writeQueue.poll();
-                }
-            }
+            writable = writeQueue.poll();
         }
         return writable;
     }

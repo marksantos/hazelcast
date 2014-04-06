@@ -32,14 +32,6 @@ import static com.hazelcast.util.StringUtil.bytesToString;
 
 final class ReadHandler extends AbstractSelectionHandler implements Runnable {
 
-    private static final ScheduledExecutorService ex = Executors.newScheduledThreadPool(1, new ThreadFactory() {
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, "READ-HANDLER");
-            t.setDaemon(true);
-            return t;
-        }
-    });
-
     private final ByteBuffer buffer;
 
     private final IOSelector ioSelector;
@@ -52,12 +44,6 @@ final class ReadHandler extends AbstractSelectionHandler implements Runnable {
         super(connection);
         this.ioSelector = ioSelector;
         buffer = ByteBuffer.allocate(connectionManager.socketReceiveBufferSize);
-
-        ex.scheduleWithFixedDelay(new Runnable() {
-            public void run() {
-                register();
-            }
-        }, 5, 5, TimeUnit.SECONDS);
     }
 
     public final void handle() {
