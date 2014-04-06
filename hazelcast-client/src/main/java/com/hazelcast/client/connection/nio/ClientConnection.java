@@ -48,6 +48,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.util.StringUtil.stringToBytes;
@@ -137,6 +138,11 @@ public class ClientConnection implements Connection, Closeable {
         }
         writeHandler.enqueueSocketWritable(packet);
         return true;
+    }
+
+    @Override
+    public boolean write(SocketWritable packet, long timeout, TimeUnit unit) {
+        return write(packet);
     }
 
     public void init() throws IOException {
