@@ -1,0 +1,29 @@
+#!/bin/sh
+
+CLASS="com.hazelcast.examples.SimpleMapTest"
+
+if [ "$1" = "-server" ]; then
+	CLASS="com.hazelcast.examples.StartServer"
+fi
+
+if [ "$1" = "-client" ]; then
+	CLASS="com.hazelcast.client.examples.SimpleClientMapTest"
+fi
+
+CLASSPATH=$CLASSPATH:~/bin
+CLASSPATH=$CLASSPATH:./hazelcast/target/classes
+CLASSPATH=$CLASSPATH:./hazelcast-client/target/classes
+CLASSPATH=$CLASSPATH:~/.m2/repository/log4j/log4j/1.2.12/log4j-1.2.12.jar
+
+ARGS="$ARGS -ea"
+ARGS="$ARGS -server"
+ARGS="$ARGS -Xms2G -Xmx2G"
+ARGS="$ARGS -XX:+HeapDumpOnOutOfMemoryError"
+
+
+echo "CLASS: $CLASS"
+echo "ARGS:  $ARGS"
+echo "CLASSPATH: $CLASSPATH"
+
+java $ARGS -cp $CLASSPATH $CLASS $@
+
