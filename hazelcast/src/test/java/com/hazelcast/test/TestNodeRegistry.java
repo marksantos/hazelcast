@@ -36,6 +36,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 final class TestNodeRegistry {
@@ -210,6 +211,11 @@ final class TestNodeRegistry {
                         return true;
                     }
                     return false;
+                }
+
+                @Override
+                public boolean write(SocketWritable packet, long timeout, TimeUnit unit) {
+                    return write(packet);
                 }
 
                 public long lastReadTime() {

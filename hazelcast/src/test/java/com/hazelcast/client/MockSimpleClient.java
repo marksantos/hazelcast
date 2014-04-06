@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -97,6 +98,12 @@ public class MockSimpleClient implements SimpleClient {
         public boolean write(SocketWritable packet) {
             return q.offer(packet);
         }
+
+        @Override
+        public boolean write(SocketWritable packet, long timeout, TimeUnit unit) {
+            return write(packet);
+        }
+
 
         @Override
         public Address getEndPoint() {
