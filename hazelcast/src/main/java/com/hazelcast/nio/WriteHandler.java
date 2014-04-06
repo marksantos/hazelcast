@@ -52,7 +52,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
     private final BlockingQueue<SocketWritable> writeQueue = new LinkedBlockingQueue<SocketWritable>(10000);
 
-    private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
+//    private final Queue<SocketWritable> urgencyWriteQueue = new ConcurrentLinkedQueue<SocketWritable>();
 
     private final AtomicInteger qCounter = new AtomicInteger();
 
@@ -79,13 +79,11 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             public void run() {
                 if (connection.live()) {
                     int qsize = writeQueue.size();
-                    int usize = urgencyWriteQueue.size();
 
-                    if (qsize + usize > 0) {
+                    if (qsize > 0) {
                         System.err.println
                                 (connection.getEndPoint()
                                                 + " -> Q: " + qsize
-                                                + ", U: " + usize
                                                 + ", QCounter: " + qCounter.getAndSet(0)
                                                 + ", B: " + buffer.remaining()
                                                 + ", last: " + new Date(lastHandle)
@@ -93,11 +91,6 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
 
                         SerializationService ss = connection.getConnectionManager().ioService
                                 .getSerializationService();
-                        for (SocketWritable sw : urgencyWriteQueue) {
-                            if (sw instanceof Packet) {
-                                System.err.println("\t" + ss.toObject(((Packet) sw).getData()));
-                            }
-                        }
 
                         ioSelector.addTask(WriteHandler.this);
                         ioSelector.wakeup();
@@ -147,17 +140,11 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
             throw new NullPointerException("SocketWritable expected!");
         }
 
-        boolean urgent = socketWritable.isUrgent();
-
-        if (urgent) {
-            urgencyWriteQueue.offer(socketWritable);
-        } else {
-            qCounter.incrementAndGet();
-            try {
-                writeQueue.put(socketWritable);
-            } catch (InterruptedException e) {
-                throw ExceptionUtil.rethrow(e);
-            }
+        qCounter.incrementAndGet();
+        try {
+            writeQueue.put(socketWritable);
+        } catch (InterruptedException e) {
+            throw ExceptionUtil.rethrow(e);
         }
 
         if (informSelector.compareAndSet(true, false)) {
@@ -172,11 +159,7 @@ public final class WriteHandler extends AbstractSelectionHandler implements Runn
     }
 
     private SocketWritable poll() {
-        SocketWritable writable = urgencyWriteQueue.poll();
-        if (writable == null) {
-            writable = writeQueue.poll();
-        }
-        return writable;
+        return writeQueue.poll();
     }
 
     @SuppressWarnings("unchecked")
