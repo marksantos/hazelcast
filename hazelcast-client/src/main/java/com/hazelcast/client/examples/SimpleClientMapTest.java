@@ -48,7 +48,7 @@ public class SimpleClientMapTest {
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         networkConfig.setRedoOperation(true);
         networkConfig.setSmartRouting(true);
-        networkConfig.addAddress("10.16.32.163");
+        networkConfig.addAddress("10.16.37.107");
 
         clientConfig.addNearCacheConfig("default",
                 new NearCacheConfig().setName("default")
